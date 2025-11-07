@@ -42,7 +42,7 @@ public:
             data = std::make_unique<T[]>(other.capacity);
             size = other.size;
             capacity = other.capacity;
-            for(size_t i=0;i<size;++i)
+            for(size_t i = 0;i < size;++i)
                 data[i] = other.data[i];
         }
         return *this;
@@ -66,7 +66,7 @@ public:
 
     void remove(size_t idx){
         if(idx >= size) throw std::out_of_range("Index out of range");
-        for(size_t i=idx;i<size-1;++i)
+        for(size_t i = idx;i < size-1;++i)
             data[i] = std::move(data[i+1]);
         --size;
     }
