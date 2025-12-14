@@ -1,123 +1,102 @@
 #pragma once
-#include "hexagon.h"
-#include "pentagon.h"
-#include "point.h"
-#include "figure.h"
-#include "rhombus.h"
+#include <cstddef>
 #include <memory>
-#include <iostream>
+#include <stdexcept>
 
-template<typename T>
+template <typename T>
 class Array {
-private:
-    std::unique_ptr<T[]> data;
-    size_t size;
-    size_t capacity;
+    std::shared_ptr<T[]> data;
+    size_t _size = 0;
+    size_t _capacity = 0;
 
-void expand() {
-        size_t newCap = capacity == 0 ? 1 : capacity * 2;
-        std::unique_ptr<T[]> newData = std::make_unique<T[]>(newCap);
-        for(size_t i=0; i<size; ++i)
-            newData[i] = std::move(data[i]); 
-        data = std::move(newData);
-        capacity = newCap;
+    void resize_if_needed() {
+        if (_size >= _capacity) {
+            size_t new_cap = (_capacity == 0) ? 1 : _capacity * 2;
+            auto new_data = std::shared_ptr<T[]>(new T[new_cap]);
+            for (size_t i = 0; i < _size; ++i) {
+                new_data[i] = std::move(data[i]);
+            }
+            data = std::move(new_data);
+            _capacity = new_cap;
+        }
     }
 
-public:
-    Array() : size(0), capacity(0) {}
+   public:
+    Array() : _capacity(10), data(new T[10]) {}
 
-    Array(const Array& other) : size(other.size), capacity(other.capacity) {
-        data = std::make_unique<T[]>(capacity);
-        for(size_t i=0;i<size;++i)
+    Array(const Array& other)
+        : _size(other._size), _capacity(other._capacity), data(new T[other._capacity]) {
+        for (size_t i = 0; i < _size; ++i) {
             data[i] = other.data[i];
+        }
     }
 
-    Array(Array&& other) noexcept : data(std::move(other.data)), size(other.size), capacity(other.capacity) {
-        other.size = 0;
-        other.capacity = 0;
+    Array(Array&& other) noexcept
+        : _size(other._size), _capacity(other._capacity), data(std::move(other.data)) {
+        other._size = 0;
+        other._capacity = 0;
     }
 
-    Array& operator=(const Array& other){
-        if(this != &other){
-            data = std::make_unique<T[]>(other.capacity);
-            size = other.size;
-            capacity = other.capacity;
-            for(size_t i = 0;i < size;++i)
+    Array& operator=(const Array& other) {
+        if (this != &other) {
+            _size = other._size;
+            _capacity = other._capacity;
+            data = std::shared_ptr<T[]>(new T[_capacity]);
+            for (size_t i = 0; i < _size; ++i) {
                 data[i] = other.data[i];
+            }
         }
         return *this;
     }
 
     Array& operator=(Array&& other) noexcept {
-        if(this != &other){
+        if (this != &other) {
+            _size = other._size;
+            _capacity = other._capacity;
             data = std::move(other.data);
-            size = other.size;
-            capacity = other.capacity;
-            other.size = 0;
-            other.capacity = 0;
+            other._size = 0;
+            other._capacity = 0;
         }
         return *this;
     }
 
-    void push_back(const T& val) {
-        if(size == capacity) expand();
-        data[size++] = val;
+    void push_back(const T& item) {
+        resize_if_needed();
+        data[_size] = item;
+        ++_size;
     }
 
-    void remove(size_t idx){
-        if(idx >= size) throw std::out_of_range("Index out of range");
-        for(size_t i = idx;i < size-1;++i)
-            data[i] = std::move(data[i+1]);
-        --size;
+    void push_back(T&& item) {
+        resize_if_needed();
+        data[_size] = std::move(item);
+        ++_size;
     }
 
-    T& operator[](size_t idx){
-        if(idx>=size) throw std::out_of_range("Index out of range");
-        return data[idx];
+    size_t size() const { return _size; }
+
+    T& operator[](size_t i) {
+        if (i >= _size) throw std::out_of_range("Array index out of range");
+        return data[i];
     }
 
-    const T& operator[](size_t idx) const{
-        if(idx>=size) throw std::out_of_range("Index out of range");
-        return data[idx];
+    const T& operator[](size_t i) const {
+        if (i >= _size) throw std::out_of_range("Array index out of range");
+        return data[i];
     }
 
-    size_t getSize() const { return size; }
-
-    void Array::printAll() const {
-    if (size == 0) {
-        std::cout << "No figures in array.\n";
-        return;
-    }
-
-    for (size_t i = 0; i < size; ++i) {
-        std::cout << "\n=== Figure " << i << " (" << arr[i]->getName() << ") ===\n";
-
-        size_t n = arr[i]->getPointCount();
-        std::cout << "Points:\n";
-        for (size_t j = 0; j < n; ++j) {
-            const Point &p = arr[i]->getPoint(j);
-            std::cout << "  (" << p.get_x() << ", " << p.get_y() << ")\n";
+    void remove(size_t index) {
+        if (index >= _size) throw std::out_of_range("Invalid index");
+        for (size_t i = index; i < _size - 1; ++i) {
+            data[i] = std::move(data[i + 1]);
         }
-
-        Point center = arr[i]->getCenter();
-        double area = static_cast<double>(*arr[i]);
-
-        std::cout << "Center: (" << center.get_x() << ", " << center.get_y() << ")\n";
-        std::cout << "Area: " << area << "\n";
+        --_size;
     }
-}
 
-    double totalArea() const {
-        double sum = 0;
-        for(size_t i = 0;i < size;++i)
-            sum += double(*data[i]);
-        return sum;
+    double total_area() const {
+        double total = 0.0;
+        for (size_t i = 0; i < _size; ++i) {
+            total += data[i]->area();
+        }
+        return total;
     }
 };
-
-// Явная инстанциация
-template class Array<int>;
-template class Array<Rhombus<int>>;
-template class Array<Pentagon<int>>;
-template class Array<Hexagon<int>>;
-template class Array<std::shared_ptr<Figure<int>>>;

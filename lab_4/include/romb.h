@@ -5,8 +5,8 @@
 #include "figure.h"
 
 template <Scalar T>
-class Pentagon : public Figure<T> {
-    std::unique_ptr<Point<T>> p1_, p2_, p3_, p4_, p5_;
+class Romb : public Figure<T> {
+    std::unique_ptr<Point<T>> p1_, p2_, p3_, p4_;
 
     double distance(const Point<T>& p1, const Point<T>& p2) const {
         T dx = p1.x - p2.x;
@@ -15,120 +15,100 @@ class Pentagon : public Figure<T> {
     }
 
    public:
-    Pentagon() {
-        double R = 1.0;
-        p1_ = std::make_unique<Point<T>>(T(R * std::cos(0)), T(R * std::sin(0)));
-        p2_ = std::make_unique<Point<T>>(T(R * std::cos(2 * M_PI / 5)), T(R * std::sin(2 * M_PI / 5)));
-        p3_ = std::make_unique<Point<T>>(T(R * std::cos(4 * M_PI / 5)), T(R * std::sin(4 * M_PI / 5)));
-        p4_ = std::make_unique<Point<T>>(T(R * std::cos(6 * M_PI / 5)), T(R * std::sin(6 * M_PI / 5)));
-        p5_ = std::make_unique<Point<T>>(T(R * std::cos(8 * M_PI / 5)), T(R * std::sin(8 * M_PI / 5)));
-    }
+    Romb() : p1_(std::make_unique<Point<T>>(2, 0)),
+             p2_(std::make_unique<Point<T>>(0, 3)),
+             p3_(std::make_unique<Point<T>>(-2, 0)),
+             p4_(std::make_unique<Point<T>>(0, -3)) {}
 
-    Pentagon(T x1, T y1, T x2, T y2, T x3, T y3, T x4, T y4, T x5, T y5)
+    Romb(T x1, T y1, T x2, T y2, T x3, T y3, T x4, T y4)
         : p1_(std::make_unique<Point<T>>(x1, y1)),
           p2_(std::make_unique<Point<T>>(x2, y2)),
           p3_(std::make_unique<Point<T>>(x3, y3)),
-          p4_(std::make_unique<Point<T>>(x4, y4)),
-          p5_(std::make_unique<Point<T>>(x5, y5)) {}
+          p4_(std::make_unique<Point<T>>(x4, y4)) {}
 
-    Pentagon(const Pentagon& other)
+    Romb(const Romb& other)
         : p1_(std::make_unique<Point<T>>(*other.p1_)),
           p2_(std::make_unique<Point<T>>(*other.p2_)),
           p3_(std::make_unique<Point<T>>(*other.p3_)),
-          p4_(std::make_unique<Point<T>>(*other.p4_)),
-          p5_(std::make_unique<Point<T>>(*other.p5_)) {}
+          p4_(std::make_unique<Point<T>>(*other.p4_)) {}
 
-    Pentagon(Pentagon&& other) noexcept
+    Romb(Romb&& other) noexcept
         : p1_(std::move(other.p1_)),
           p2_(std::move(other.p2_)),
           p3_(std::move(other.p3_)),
-          p4_(std::move(other.p4_)),
-          p5_(std::move(other.p5_)) {}
+          p4_(std::move(other.p4_)) {}
 
-    Pentagon& operator=(const Pentagon& other) {
+    Romb& operator=(const Romb& other) {
         if (this != &other) {
             p1_ = std::make_unique<Point<T>>(*other.p1_);
             p2_ = std::make_unique<Point<T>>(*other.p2_);
             p3_ = std::make_unique<Point<T>>(*other.p3_);
             p4_ = std::make_unique<Point<T>>(*other.p4_);
-            p5_ = std::make_unique<Point<T>>(*other.p5_);
         }
         return *this;
     }
 
-    Pentagon& operator=(Pentagon&& other) noexcept {
+    Romb& operator=(Romb&& other) noexcept {
         if (this != &other) {
             p1_ = std::move(other.p1_);
             p2_ = std::move(other.p2_);
             p3_ = std::move(other.p3_);
             p4_ = std::move(other.p4_);
-            p5_ = std::move(other.p5_);
         }
         return *this;
     }
 
     Point<T> centroid() const override {
-        T center_x = (p1_->x + p2_->x + p3_->x + p4_->x + p5_->x) / 5;
-        T center_y = (p1_->y + p2_->y + p3_->y + p4_->y + p5_->y) / 5;
+        T center_x = (p1_->x + p2_->x + p3_->x + p4_->x) / 4;
+        T center_y = (p1_->y + p2_->y + p3_->y + p4_->y) / 4;
         return Point<T>(center_x, center_y);
     }
 
     double area() const override {
-        double area = 0.0;
-        area += p1_->x * p2_->y - p2_->x * p1_->y;
-        area += p2_->x * p3_->y - p3_->x * p2_->y;
-        area += p3_->x * p4_->y - p4_->x * p3_->y;
-        area += p4_->x * p5_->y - p5_->x * p4_->y;
-        area += p5_->x * p1_->y - p1_->x * p5_->y;
-        return std::abs(area) / 2.0;
+        double d1 = distance(*p1_, *p3_);
+        double d2 = distance(*p2_, *p4_);
+        return (d1 * d2) / 2.0;
     }
 
     bool isCorrect() const {
         const double EPS = 1e-6;
         
         // Проверка на совпадающие точки
-        Point<T>* points[] = {p1_.get(), p2_.get(), p3_.get(), p4_.get(), p5_.get()};
-        for (int i = 0; i < 5; ++i) {
-            for (int j = i + 1; j < 5; ++j) {
-                if (distance(*points[i], *points[j]) < EPS) {
-                    return false;
-                }
-            }
+        if (distance(*p1_, *p2_) < EPS || distance(*p2_, *p3_) < EPS ||
+            distance(*p3_, *p4_) < EPS || distance(*p4_, *p1_) < EPS) {
+            return false;
         }
-
-        // Проверка равенства всех сторон
+        
+        // Проверка равенства всех сторон ромба
         double side1 = distance(*p1_, *p2_);
         double side2 = distance(*p2_, *p3_);
         double side3 = distance(*p3_, *p4_);
-        double side4 = distance(*p4_, *p5_);
-        double side5 = distance(*p5_, *p1_);
-
+        double side4 = distance(*p4_, *p1_);
+        
         return (std::fabs(side1 - side2) < EPS) &&
                (std::fabs(side2 - side3) < EPS) &&
                (std::fabs(side3 - side4) < EPS) &&
-               (std::fabs(side4 - side5) < EPS) &&
                (side1 > EPS) && (area() > EPS);
     }
 
     std::unique_ptr<std::unique_ptr<Point<T>>[]> getVertices(size_t& count) const override {
-        count = 5;
+        count = 4;
         auto verts = std::make_unique<std::unique_ptr<Point<T>>[]>(count);
         verts[0] = std::make_unique<Point<T>>(*p1_);
         verts[1] = std::make_unique<Point<T>>(*p2_);
         verts[2] = std::make_unique<Point<T>>(*p3_);
         verts[3] = std::make_unique<Point<T>>(*p4_);
-        verts[4] = std::make_unique<Point<T>>(*p5_);
         return verts;
     }
 
     bool operator==(const Figure<T>& other) const override {
-        const Pentagon<T>* p = dynamic_cast<const Pentagon<T>*>(&other);
-        return p && *p1_ == *p->p1_ && *p2_ == *p->p2_ && *p3_ == *p->p3_ && 
-               *p4_ == *p->p4_ && *p5_ == *p->p5_;
+        const Romb<T>* rh = dynamic_cast<const Romb<T>*>(&other);
+        return rh && *p1_ == *rh->p1_ && *p2_ == *rh->p2_ && 
+               *p3_ == *rh->p3_ && *p4_ == *rh->p4_;
     }
 
     std::shared_ptr<Figure<T>> clone() const override {
-        return std::make_shared<Pentagon<T>>(*this);
+        return std::make_shared<Romb<T>>(*this);
     }
 
     void print_vertices() const override {
@@ -137,18 +117,16 @@ class Pentagon : public Figure<T> {
         std::cout << "  (" << p2_->x << ", " << p2_->y << ")\n";
         std::cout << "  (" << p3_->x << ", " << p3_->y << ")\n";
         std::cout << "  (" << p4_->x << ", " << p4_->y << ")\n";
-        std::cout << "  (" << p5_->x << ", " << p5_->y << ")\n";
     }
 
     void read_from_stream(std::istream& is) override {
-        T x1, y1, x2, y2, x3, y3, x4, y4, x5, y5;
-        if (!(is >> x1 >> y1 >> x2 >> y2 >> x3 >> y3 >> x4 >> y4 >> x5 >> y5)) {
-            throw std::runtime_error("Invalid input for Pentagon");
+        T x1, y1, x2, y2, x3, y3, x4, y4;
+        if (!(is >> x1 >> y1 >> x2 >> y2 >> x3 >> y3 >> x4 >> y4)) {
+            throw std::runtime_error("Invalid input for Romb");
         }
         p1_ = std::make_unique<Point<T>>(x1, y1);
         p2_ = std::make_unique<Point<T>>(x2, y2);
         p3_ = std::make_unique<Point<T>>(x3, y3);
         p4_ = std::make_unique<Point<T>>(x4, y4);
-        p5_ = std::make_unique<Point<T>>(x5, y5);
     }
 };

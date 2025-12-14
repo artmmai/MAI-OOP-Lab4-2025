@@ -1,39 +1,30 @@
 #pragma once
-#include <cstddef>
-#include <stdexcept>
-#include <concepts>
+#include <iostream>
 #include <memory>
+#include "point.h"
 
-template<class P>
-struct Point {
-    P x{}, y{};
-};
-
-template<class T>
+template <Scalar T>
 class Figure {
-protected:
-    std::unique_ptr<Point<T>[]> points;
-    size_t nPoints;
-
-public:
-    Figure(size_t n) : nPoints(n), points(std::make_unique<Point<T>[]>(n)) {}
-
+   public:
     virtual ~Figure() = default;
-
-    // Методы для работы с точками
-    Point<T>& getPoint(size_t idx) {
-        if (idx >= nPoints) throw std::out_of_range("Invalid point index");
-        return points[idx];
-    }
-
-    void setPoint(size_t idx, const Point<T>& p) {
-        if (idx >= nPoints) throw std::out_of_range("Invalid point index");
-        points[idx] = p;
-    }
-
-    size_t getSize() const { return nPoints; }
-
-    virtual bool isCorrect() const = 0;
-    virtual void print() const = 0;
-    virtual operator double() const = 0;
+    virtual Point<T> centroid() const = 0;
+    virtual double area() const = 0;
+    virtual std::unique_ptr<std::unique_ptr<Point<T>>[]> getVertices(size_t& count) const = 0;
+    virtual bool operator==(const Figure<T>& other) const = 0;
+    virtual std::shared_ptr<Figure<T>> clone() const = 0;
+    virtual operator double() const { return area(); }
+    virtual void print_vertices() const = 0;
+    virtual void read_from_stream(std::istream& is) = 0;
 };
+
+template <Scalar T>
+std::istream& operator>>(std::istream& is, Figure<T>& fig) {
+    fig.read_from_stream(is);
+    return is;
+}
+
+template <Scalar T>
+std::ostream& operator<<(std::ostream& os, const Figure<T>& fig) {
+    fig.print_vertices();
+    return os;
+}
